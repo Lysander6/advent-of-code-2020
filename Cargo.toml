@@ -1,0 +1,6 @@
+[workspace]
+members = ["common", "day_*"]
+resolver = "2"
+
+[workspace.dependencies]
+common = { path = "./common" }
