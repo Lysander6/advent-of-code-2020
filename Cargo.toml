@@ -5,3 +5,4 @@ resolver = "2"
 [workspace.dependencies]
 anyhow = "1.0"
 common = { path = "./common" }
+parse-display = "0.8"
