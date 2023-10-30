@@ -43,8 +43,12 @@ pub fn validate_password_new_policy(p: &PasswordWithPolicy) -> bool {
         letter, min, max, ..
     } = *p;
 
-    let m = password.chars().nth(min - 1).unwrap();
-    let n = password.chars().nth(max - 1).unwrap();
+    let Some(m) = password.chars().nth(min - 1) else {
+        return false;
+    };
+    let Some(n) = password.chars().nth(max - 1) else {
+        return false;
+    };
 
     (m == letter || n == letter) && m != n
 }
