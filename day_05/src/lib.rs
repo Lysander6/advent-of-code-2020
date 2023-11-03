@@ -19,7 +19,7 @@ pub fn str_to_seat(s: &str) -> u16 {
 
 #[derive(Debug)]
 pub struct Problem {
-    boarding_passes: Vec<String>,
+    pub boarding_passes: Vec<String>,
 }
 
 impl FromStr for Problem {
@@ -32,21 +32,27 @@ impl FromStr for Problem {
     }
 }
 
-#[must_use]
-pub fn find_max_seat_id(p: &Problem) -> Option<u16> {
-    let Problem { boarding_passes } = p;
+/// # Errors
+///
+/// Returns error when input slice length is greater than `u16::MAX`
+pub fn find_my_seat_id(occupied_seats: &[u16]) -> Result<u16, anyhow::Error> {
+    let mut occupied_seats = occupied_seats.to_vec();
+    occupied_seats.sort_unstable();
 
-    boarding_passes.iter().map(|s| str_to_seat(s)).max()
+    let idx_offset = occupied_seats[0];
+
+    for (i, &seat_id) in occupied_seats.iter().enumerate() {
+        if seat_id - u16::try_from(i)? != idx_offset {
+            return Ok(seat_id - 1);
+        }
+    }
+
+    unreachable!()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    const TEST_INPUT: &str = "\
-BFFFBBFRRR
-FFFBBBFRRR
-BBFFBBFRLL";
 
     #[test]
     fn test_bin_encoding() {
@@ -68,9 +74,7 @@ BBFFBBFRLL";
     }
 
     #[test]
-    fn test_find_max_seat_id() {
-        let p = TEST_INPUT.parse().unwrap();
-
-        assert_eq!(find_max_seat_id(&p), Some(820));
+    fn test_find_my_seat_id() {
+        assert_eq!(find_my_seat_id(&[9, 4, 8, 5, 6]).unwrap(), 7);
     }
 }
