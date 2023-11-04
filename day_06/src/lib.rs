@@ -15,19 +15,38 @@ impl FromStr for Problem {
     }
 }
 
-fn count_unique(s: &str) -> usize {
-    let mut set = s.chars().collect::<HashSet<_>>();
+fn count_unique(group: &str) -> usize {
+    let group_unique_answers = group.chars().filter(|c| *c != '\n').collect::<HashSet<_>>();
 
-    set.remove(&'\n');
+    group_unique_answers.len()
+}
 
-    set.len()
+fn count_shared(group: &str) -> usize {
+    let answers = group
+        .lines()
+        .map(|answer| answer.chars().collect::<HashSet<_>>())
+        .collect::<Vec<_>>();
+
+    let shared_answers = answers
+        .into_iter()
+        .reduce(|acc, set| acc.intersection(&set).copied().collect::<HashSet<_>>())
+        .map(|set| set.len());
+
+    shared_answers.unwrap_or(0)
 }
 
 #[must_use]
-pub fn sum_yes_answers(p: &Problem) -> usize {
+pub fn sum_unique_answers(p: &Problem) -> usize {
     let Problem { groups } = p;
 
-    groups.iter().map(|s| count_unique(s)).sum()
+    groups.iter().map(|g| count_unique(g)).sum()
+}
+
+#[must_use]
+pub fn sum_shared_answers(p: &Problem) -> usize {
+    let Problem { groups } = p;
+
+    groups.iter().map(|g| count_shared(g)).sum()
 }
 
 #[cfg(test)]
@@ -52,9 +71,16 @@ a
 b";
 
     #[test]
-    fn test_sum_yes_answers() {
+    fn test_sum_unique_answers() {
         let p: Problem = TEST_INPUT.parse().unwrap();
 
-        assert_eq!(sum_yes_answers(&p), 11);
+        assert_eq!(sum_unique_answers(&p), 11);
+    }
+
+    #[test]
+    fn test_sum_shared_answers() {
+        let p: Problem = TEST_INPUT.parse().unwrap();
+
+        assert_eq!(sum_shared_answers(&p), 6);
     }
 }
