@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, bail};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum Instruction {
     Acc(i32),
     Jmp(i32),
@@ -85,6 +85,38 @@ pub fn run_until_first_loop(p: &Problem) -> Result<(i32, bool), anyhow::Error> {
     Ok((acc, i == instructions.len()))
 }
 
+/// # Errors
+///
+/// See `run_until_first_loop`
+pub fn brute_force(p: &Problem) -> Result<i32, anyhow::Error> {
+    // TODO: try backtracking instead
+    for (i, instr) in p.instructions.iter().enumerate() {
+        match instr {
+            Instruction::Acc(_v) => continue,
+            Instruction::Jmp(v) => {
+                let mut instructions = p.instructions.clone();
+                instructions[i] = Instruction::Nop(*v);
+                let p = Problem { instructions };
+                let (acc, halts) = run_until_first_loop(&p)?;
+                if halts {
+                    return Ok(acc);
+                }
+            }
+            Instruction::Nop(v) => {
+                let mut instructions = p.instructions.clone();
+                instructions[i] = Instruction::Jmp(*v);
+                let p = Problem { instructions };
+                let (acc, halts) = run_until_first_loop(&p)?;
+                if halts {
+                    return Ok(acc);
+                }
+            }
+        }
+    }
+
+    unreachable!()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -121,5 +153,11 @@ acc +6";
     fn test_run_until_first_loop_halting() {
         let p: Problem = TEST_INPUT_HALTING.parse().unwrap();
         assert_eq!(run_until_first_loop(&p).unwrap(), (8, true));
+    }
+
+    #[test]
+    fn test_brute_force() {
+        let p: Problem = TEST_INPUT.parse().unwrap();
+        assert_eq!(brute_force(&p).unwrap(), 8);
     }
 }

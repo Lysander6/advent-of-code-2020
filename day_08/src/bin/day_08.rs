@@ -1,7 +1,7 @@
 use std::{env, fs};
 
 use anyhow::Context;
-use day_08::{run_until_first_loop, Problem};
+use day_08::{brute_force, run_until_first_loop, Problem};
 
 fn main() -> Result<(), anyhow::Error> {
     let input_path = env::args().nth(1).context("missing path argument")?;
@@ -10,6 +10,9 @@ fn main() -> Result<(), anyhow::Error> {
 
     let (accumulator_value, _) = run_until_first_loop(&p)?;
     println!("Part 1: {accumulator_value}");
+
+    let accumulator_value = brute_force(&p)?;
+    println!("Part 2: {accumulator_value}");
 
     Ok(())
 }
