@@ -1,7 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
 use anyhow::{anyhow, Context};
-use regex::Regex;
 
 #[derive(Debug)]
 pub struct Problem<'a> {
@@ -16,9 +15,6 @@ impl<'a> TryFrom<&'a str> for Problem<'a> {
     type Error = anyhow::Error;
 
     fn try_from(s: &'a str) -> Result<Self, Self::Error> {
-        let containing_bag_name_re = Regex::new(r"^(\w+ \w+)")?;
-        let contained_bag_re = Regex::new(r"(\d+) (\w+ \w+)")?;
-
         let mut next_bag_idx = 0usize;
         let mut name_to_idx: HashMap<&str, usize> = HashMap::new();
         let mut idx_to_name: Vec<&str> = Vec::new();
@@ -26,16 +22,26 @@ impl<'a> TryFrom<&'a str> for Problem<'a> {
         let mut contained_by: Vec<Vec<(usize, usize)>> = Vec::new();
 
         for line in s.lines() {
-            let containing_bag_name = containing_bag_name_re
-                .find(line)
-                .ok_or_else(|| anyhow!("couldn't match bag name"))?
-                .as_str();
+            let (containing_bag_name, contents) = line
+                .split_once(" bags contain ")
+                .ok_or_else(|| anyhow!("malformed input"))?;
 
-            let contained_bags = contained_bag_re
-                .captures_iter(line)
-                .map(|c| c.extract::<2>())
-                .map(|(_, [count, name])| (count.parse::<usize>().unwrap(), name))
-                .collect::<Vec<_>>();
+            let contained_bags = if contents == "no other bags." {
+                Vec::new()
+            } else {
+                contents
+                    .split_terminator(", ")
+                    .map(|z| {
+                        let first_space_idx = z.find(' ').unwrap();
+                        let count = z[0..first_space_idx].parse::<usize>().unwrap();
+
+                        let idx_past_bag_name = z.find(" bag").unwrap();
+                        let bag_name = &z[(first_space_idx + 1)..idx_past_bag_name];
+
+                        (count, bag_name)
+                    })
+                    .collect()
+            };
 
             let containing_bag_idx = name_to_idx
                 .entry(containing_bag_name)
