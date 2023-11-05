@@ -1,30 +1,27 @@
-use std::{
-    collections::{HashMap, HashSet},
-    str::FromStr,
-};
+use std::collections::{HashMap, HashSet};
 
 use anyhow::{anyhow, Context};
 use regex::Regex;
 
 #[derive(Debug)]
-pub struct Problem {
-    name_to_idx: HashMap<String, usize>,
+pub struct Problem<'a> {
+    name_to_idx: HashMap<&'a str, usize>,
     #[allow(dead_code)]
-    idx_to_name: Vec<String>,
+    idx_to_name: Vec<&'a str>,
     contains: Vec<Vec<(usize, usize)>>,
     contained_by: Vec<Vec<(usize, usize)>>,
 }
 
-impl FromStr for Problem {
-    type Err = anyhow::Error;
+impl<'a> TryFrom<&'a str> for Problem<'a> {
+    type Error = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn try_from(s: &'a str) -> Result<Self, Self::Error> {
         let containing_bag_name_re = Regex::new(r"^(\w+ \w+)")?;
         let contained_bag_re = Regex::new(r"(\d+) (\w+ \w+)")?;
 
         let mut next_bag_idx = 0usize;
-        let mut name_to_idx: HashMap<String, usize> = HashMap::new();
-        let mut idx_to_name: Vec<String> = Vec::new();
+        let mut name_to_idx: HashMap<&str, usize> = HashMap::new();
+        let mut idx_to_name: Vec<&str> = Vec::new();
         let mut contains: Vec<Vec<(usize, usize)>> = Vec::new();
         let mut contained_by: Vec<Vec<(usize, usize)>> = Vec::new();
 
@@ -41,7 +38,7 @@ impl FromStr for Problem {
                 .collect::<Vec<_>>();
 
             let containing_bag_idx = name_to_idx
-                .entry(containing_bag_name.to_string())
+                .entry(containing_bag_name)
                 .or_insert_with(|| {
                     let idx = next_bag_idx;
                     next_bag_idx += 1;
@@ -51,14 +48,14 @@ impl FromStr for Problem {
 
             if containing_bag_idx == idx_to_name.len() {
                 // new bag
-                idx_to_name.push(containing_bag_name.to_string());
+                idx_to_name.push(containing_bag_name);
                 contains.push(Vec::new());
                 contained_by.push(Vec::new());
             }
 
             for (contained_times, contained_bag_name) in contained_bags {
                 let contained_bag_idx = name_to_idx
-                    .entry(contained_bag_name.to_string())
+                    .entry(contained_bag_name)
                     .or_insert_with(|| {
                         let idx = next_bag_idx;
                         next_bag_idx += 1;
@@ -69,7 +66,7 @@ impl FromStr for Problem {
                 if contained_bag_idx == idx_to_name.len() {
                     // new bag
                     // TODO: move to lambda function
-                    idx_to_name.push(contained_bag_name.to_string());
+                    idx_to_name.push(contained_bag_name);
                     contains.push(Vec::new());
                     contained_by.push(Vec::new());
                 }
@@ -177,24 +174,24 @@ dark violet bags contain no other bags.";
 
     #[test]
     fn test_problem_parser() {
-        assert!(TEST_INPUT.parse::<Problem>().is_ok());
+        assert!(Problem::try_from(TEST_INPUT).is_ok());
     }
 
     #[test]
     fn test_count_containing_bags() {
-        let p: Problem = TEST_INPUT.parse().unwrap();
+        let p: Problem = TEST_INPUT.try_into().unwrap();
         assert_eq!(count_containing_bags(&p, "shiny gold").unwrap(), 4);
     }
 
     #[test]
     fn test_count_contained_bags() {
-        let p: Problem = TEST_INPUT.parse().unwrap();
+        let p: Problem = TEST_INPUT.try_into().unwrap();
         assert_eq!(count_contained_bags(&p, "shiny gold").unwrap(), 32);
     }
 
     #[test]
     fn test_count_contained_bags_deeply_nested() {
-        let p: Problem = TEST_INPUT_NESTED.parse().unwrap();
+        let p: Problem = TEST_INPUT_NESTED.try_into().unwrap();
         assert_eq!(count_contained_bags(&p, "shiny gold").unwrap(), 126);
     }
 }
