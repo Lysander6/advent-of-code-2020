@@ -8,7 +8,7 @@ fn main() -> Result<(), anyhow::Error> {
     let content = fs::read_to_string(input_path)?;
     let p: Problem = content.parse()?;
 
-    let accumulator_value = run_until_first_loop(&p)?;
+    let (accumulator_value, _) = run_until_first_loop(&p)?;
     println!("Part 1: {accumulator_value}");
 
     Ok(())

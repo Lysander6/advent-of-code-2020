@@ -50,14 +50,14 @@ impl FromStr for Problem {
 ///
 /// Returns error if instruction pointer `i` runs out of (positive) `i32` range
 #[allow(clippy::cast_sign_loss)]
-pub fn run_until_first_loop(p: &Problem) -> Result<i32, anyhow::Error> {
+pub fn run_until_first_loop(p: &Problem) -> Result<(i32, bool), anyhow::Error> {
     let Problem { instructions } = p;
     let mut visited_lines = vec![false; instructions.len()];
     let mut acc = 0;
     let mut i = 0;
 
     loop {
-        if visited_lines[i] {
+        if i == instructions.len() || visited_lines[i] {
             break;
         }
 
@@ -81,7 +81,8 @@ pub fn run_until_first_loop(p: &Problem) -> Result<i32, anyhow::Error> {
         }
     }
 
-    Ok(acc)
+    // program halts if `i` is set to index `insertions.len()`
+    Ok((acc, i == instructions.len()))
 }
 
 #[cfg(test)]
@@ -99,9 +100,26 @@ acc +1
 jmp -4
 acc +6";
 
+    const TEST_INPUT_HALTING: &str = "\
+nop +0
+acc +1
+jmp +4
+acc +3
+jmp -3
+acc -99
+acc +1
+nop -4
+acc +6";
+
     #[test]
     fn test_run_until_first_loop() {
         let p: Problem = TEST_INPUT.parse().unwrap();
-        assert_eq!(run_until_first_loop(&p).unwrap(), 5);
+        assert_eq!(run_until_first_loop(&p).unwrap(), (5, false));
+    }
+
+    #[test]
+    fn test_run_until_first_loop_halting() {
+        let p: Problem = TEST_INPUT_HALTING.parse().unwrap();
+        assert_eq!(run_until_first_loop(&p).unwrap(), (8, true));
     }
 }
