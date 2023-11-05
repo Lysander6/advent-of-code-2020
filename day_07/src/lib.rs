@@ -11,6 +11,37 @@ pub struct Problem<'a> {
     contained_by: Vec<Vec<(usize, usize)>>,
 }
 
+struct Bag<'a>(&'a str, Vec<(usize, &'a str)>);
+
+impl<'a> TryFrom<&'a str> for Bag<'a> {
+    type Error = anyhow::Error;
+
+    fn try_from(s: &'a str) -> Result<Self, Self::Error> {
+        let (bag_name, contents) = s
+            .split_once(" bags contain ")
+            .ok_or_else(|| anyhow!("malformed input"))?;
+
+        let contained_bags = if contents == "no other bags." {
+            Vec::new()
+        } else {
+            contents
+                .split_terminator(", ")
+                .map(|z| {
+                    let first_space_idx = z.find(' ').unwrap();
+                    let count = z[0..first_space_idx].parse::<usize>().unwrap();
+
+                    let idx_past_bag_name = z.find(" bag").unwrap();
+                    let bag_name = &z[(first_space_idx + 1)..idx_past_bag_name];
+
+                    (count, bag_name)
+                })
+                .collect()
+        };
+
+        Ok(Bag(bag_name, contained_bags))
+    }
+}
+
 impl<'a> TryFrom<&'a str> for Problem<'a> {
     type Error = anyhow::Error;
 
@@ -22,26 +53,7 @@ impl<'a> TryFrom<&'a str> for Problem<'a> {
         let mut contained_by: Vec<Vec<(usize, usize)>> = Vec::new();
 
         for line in s.lines() {
-            let (containing_bag_name, contents) = line
-                .split_once(" bags contain ")
-                .ok_or_else(|| anyhow!("malformed input"))?;
-
-            let contained_bags = if contents == "no other bags." {
-                Vec::new()
-            } else {
-                contents
-                    .split_terminator(", ")
-                    .map(|z| {
-                        let first_space_idx = z.find(' ').unwrap();
-                        let count = z[0..first_space_idx].parse::<usize>().unwrap();
-
-                        let idx_past_bag_name = z.find(" bag").unwrap();
-                        let bag_name = &z[(first_space_idx + 1)..idx_past_bag_name];
-
-                        (count, bag_name)
-                    })
-                    .collect()
-            };
+            let Bag(containing_bag_name, contained_bags) = line.try_into()?;
 
             let containing_bag_idx = name_to_idx
                 .entry(containing_bag_name)
