@@ -5,7 +5,7 @@ use std::{
 
 #[derive(Debug)]
 pub struct Problem {
-    pub numbers: Vec<u64>,
+    pub numbers: Vec<i64>,
 }
 
 impl FromStr for Problem {
@@ -19,8 +19,8 @@ impl FromStr for Problem {
 }
 
 #[must_use]
-pub fn find_first_not_following_the_rule(preamble_length: usize, numbers: &[u64]) -> (usize, u64) {
-    let mut sum_counts: HashMap<u64, usize> = HashMap::new();
+pub fn find_first_not_following_the_rule(preamble_length: usize, numbers: &[i64]) -> (usize, i64) {
+    let mut sum_counts: HashMap<i64, usize> = HashMap::new();
 
     let preamble = &numbers[..preamble_length];
 
@@ -72,6 +72,25 @@ pub fn find_first_not_following_the_rule(preamble_length: usize, numbers: &[u64]
     unreachable!()
 }
 
+#[must_use]
+pub fn find_continuous_set_summing_to_value(target: i64, numbers: &[i64]) -> Vec<i64> {
+    let mut i = 0;
+    let mut j = 1;
+    let mut sum = numbers[i];
+
+    while sum != target {
+        if sum + numbers[j] <= target {
+            sum += numbers[j];
+            j += 1;
+        } else {
+            sum -= numbers[i];
+            i += 1;
+        }
+    }
+
+    numbers[i..j].to_vec()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -99,8 +118,17 @@ mod tests {
 576";
 
     #[test]
-    fn test_name() {
+    fn test_find_first_not_following_the_rule() {
         let Problem { numbers } = TEST_INPUT.parse().unwrap();
         assert_eq!(find_first_not_following_the_rule(5, &numbers), (14, 127));
+    }
+
+    #[test]
+    fn test_find_continuous_set_summing_to_value() {
+        let Problem { numbers } = TEST_INPUT.parse().unwrap();
+        assert_eq!(
+            find_continuous_set_summing_to_value(127, &numbers),
+            vec![15, 25, 47, 40]
+        );
     }
 }
