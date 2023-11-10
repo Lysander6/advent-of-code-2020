@@ -8,7 +8,7 @@ fn main() -> Result<(), anyhow::Error> {
     let content = fs::read_to_string(input_path)?;
     let Problem { numbers } = content.parse()?;
 
-    let (_, value) = find_first_not_following_the_rule(25, &numbers);
+    let value = find_first_not_following_the_rule(25, &numbers);
     println!("Part 1: {value}");
 
     let v = find_continuous_set_summing_to_value(value, &numbers);

@@ -19,32 +19,30 @@ impl FromStr for Problem {
 }
 
 #[must_use]
-pub fn find_first_not_following_the_rule(preamble_length: usize, numbers: &[i64]) -> (usize, i64) {
+pub fn find_first_not_following_the_rule(preamble_length: usize, numbers: &[i64]) -> i64 {
+    // keep track of sums of every pair in `preamble_length` window of `numbers`
     let mut sum_counts: HashMap<i64, usize> = HashMap::new();
 
-    let preamble = &numbers[..preamble_length];
-
+    // pre-populate `sum_counts` with numbers from the preamble
     for i in 0..preamble_length {
         for j in (i + 1)..preamble_length {
-            let sum = preamble[i] + preamble[j];
+            let sum = numbers[i] + numbers[j];
             sum_counts.entry(sum).and_modify(|v| *v += 1).or_insert(1);
         }
     }
 
-    let mut idx = preamble_length;
-
     for window in numbers.windows(preamble_length + 1) {
         let new_arrival = window[preamble_length];
 
-        if sum_counts.contains_key(&new_arrival) {
-            idx += 1;
-        } else {
-            return (idx, new_arrival);
+        if !sum_counts.contains_key(&new_arrival) {
+            return new_arrival;
         }
 
         let staying_in_window = &window[1..preamble_length];
         let leaving_value = window[0];
 
+        // update `sum_counts` taking into account two values that are entering
+        // and leaving the window
         for v in staying_in_window {
             let leaving_sum = v + leaving_value;
             let joining_sum = v + new_arrival;
@@ -69,11 +67,11 @@ pub fn find_first_not_following_the_rule(preamble_length: usize, numbers: &[i64]
         }
     }
 
-    unreachable!()
+    unreachable!("no solution found")
 }
 
 #[must_use]
-pub fn find_continuous_set_summing_to_value(target: i64, numbers: &[i64]) -> Vec<i64> {
+pub fn find_continuous_set_summing_to_value(target: i64, numbers: &[i64]) -> &[i64] {
     let mut i = 0;
     let mut j = 1;
     let mut sum = numbers[i];
@@ -88,7 +86,7 @@ pub fn find_continuous_set_summing_to_value(target: i64, numbers: &[i64]) -> Vec
         }
     }
 
-    numbers[i..j].to_vec()
+    &numbers[i..j]
 }
 
 #[cfg(test)]
@@ -120,7 +118,7 @@ mod tests {
     #[test]
     fn test_find_first_not_following_the_rule() {
         let Problem { numbers } = TEST_INPUT.parse().unwrap();
-        assert_eq!(find_first_not_following_the_rule(5, &numbers), (14, 127));
+        assert_eq!(find_first_not_following_the_rule(5, &numbers), 127);
     }
 
     #[test]
