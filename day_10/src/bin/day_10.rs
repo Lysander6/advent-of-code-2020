@@ -1,7 +1,7 @@
 use std::{env, fs};
 
 use anyhow::Context;
-use day_10::{solve_part_1, Problem};
+use day_10::{solve_part_1, solve_part_2, Problem};
 
 fn main() -> Result<(), anyhow::Error> {
     let input_path = env::args().nth(1).context("missing path argument")?;
@@ -10,6 +10,9 @@ fn main() -> Result<(), anyhow::Error> {
 
     let (one_diff, three_diff) = solve_part_1(&p);
     println!("Part 1: {}", one_diff * three_diff);
+
+    let arrangements = solve_part_2(&p);
+    println!("Part 2: {arrangements}");
 
     Ok(())
 }
