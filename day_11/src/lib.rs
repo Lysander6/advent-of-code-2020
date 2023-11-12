@@ -10,7 +10,7 @@ pub enum Space {
     Occupied,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Problem {
     map: Vec<Vec<Space>>,
 }
@@ -107,6 +107,49 @@ fn run(input: &[Vec<Space>]) -> (Vec<Vec<Space>>, bool) {
     (output, changed)
 }
 
+fn run2(
+    input: &[Vec<Space>],
+    visible_seats: &HashMap<(usize, usize), Vec<(usize, usize)>>,
+) -> (Vec<Vec<Space>>, bool) {
+    let max_i = input.len() - 1;
+    let max_j = input[0].len() - 1;
+
+    let mut output = input.to_vec();
+    let mut changed = false;
+
+    for i in 0..=max_i {
+        for j in 0..=max_j {
+            match &input[i][j] {
+                Space::Floor => {}
+                seat @ (Space::Empty | Space::Occupied) => {
+                    let occupied_seats_count = visible_seats[&(i, j)]
+                        .iter()
+                        .filter(|(ni, nj)| input[*ni][*nj] == Space::Occupied)
+                        .count();
+
+                    match seat {
+                        Space::Empty => {
+                            if occupied_seats_count == 0 {
+                                output[i][j] = Space::Occupied;
+                                changed = true;
+                            }
+                        }
+                        Space::Occupied => {
+                            if occupied_seats_count >= 5 {
+                                output[i][j] = Space::Empty;
+                                changed = true;
+                            }
+                        }
+                        Space::Floor => unreachable!(),
+                    }
+                }
+            }
+        }
+    }
+
+    (output, changed)
+}
+
 fn count_occupied_seats(input: &[Vec<Space>]) -> usize {
     input
         .iter()
@@ -162,6 +205,8 @@ fn make_visible_seats_map(input: &[Vec<Space>]) -> HashMap<(usize, usize), Vec<(
                         }
                     }
                 }
+
+                map.entry((i, j)).or_insert(vec![]);
             }
         }
     }
@@ -169,10 +214,32 @@ fn make_visible_seats_map(input: &[Vec<Space>]) -> HashMap<(usize, usize), Vec<(
     map
 }
 
+fn run_until_stable_state2(input: Vec<Vec<Space>>) -> Vec<Vec<Space>> {
+    let visible_seats = make_visible_seats_map(&input);
+    let mut map = input;
+
+    loop {
+        let (output, changed) = run2(&map, &visible_seats);
+        map = output;
+
+        if !changed {
+            return map;
+        }
+    }
+}
+
 #[must_use]
 pub fn solve_part_1(p: Problem) -> usize {
     let Problem { map } = p;
     let map = run_until_stable_state(map);
+
+    count_occupied_seats(&map)
+}
+
+#[must_use]
+pub fn solve_part_2(p: Problem) -> usize {
+    let Problem { map } = p;
+    let map = run_until_stable_state2(map);
 
     count_occupied_seats(&map)
 }
@@ -246,6 +313,13 @@ L.LLLLL.LL";
         let p: Problem = TEST_INPUT_VISIBLE_SEATS_3.parse().unwrap();
         let map = make_visible_seats_map(&p.map);
 
-        assert!(!map.contains_key(&(3, 3)));
+        assert_eq!(map[&(3, 3)], vec![]);
+    }
+
+    #[test]
+    fn test_solve_part_2() {
+        let p: Problem = TEST_INPUT.parse().unwrap();
+
+        assert_eq!(solve_part_2(p), 26);
     }
 }
