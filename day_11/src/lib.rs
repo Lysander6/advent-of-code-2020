@@ -1,4 +1,4 @@
-#![allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)]
+#![allow(clippy::cast_possible_wrap, clippy::cast_sign_loss, clippy::match_on_vec_items)]
 use std::{collections::HashMap, str::FromStr};
 
 use anyhow::bail;
@@ -111,31 +111,6 @@ fn count_occupied_seats(input: &[Vec<Space>]) -> usize {
         .sum()
 }
 
-fn run_until_stable_state(input: Vec<Vec<Space>>) -> Vec<Vec<Space>> {
-    let mut map = input;
-
-    loop {
-        let (output, changed) = run(&map, 4, |i, j, max_i, max_j| {
-            neighbour_offsets(i, j, max_i, max_j)
-                .iter()
-                .map(|&(dx, dy)| ((i as isize + dx) as usize, (j as isize + dy) as usize))
-                .filter_map(|(x, y)| {
-                    if map[x][y] == Space::Occupied {
-                        Some((x, y))
-                    } else {
-                        None
-                    }
-                })
-                .count()
-        });
-        map = output;
-
-        if !changed {
-            return map;
-        }
-    }
-}
-
 fn make_visible_seats_map(input: &[Vec<Space>]) -> HashMap<(usize, usize), Vec<(usize, usize)>> {
     let mut map = HashMap::new();
     let max_i = input.len() - 1;
@@ -180,12 +155,35 @@ fn make_visible_seats_map(input: &[Vec<Space>]) -> HashMap<(usize, usize), Vec<(
     map
 }
 
-fn run_until_stable_state2(input: Vec<Vec<Space>>) -> Vec<Vec<Space>> {
-    let visible_seats = make_visible_seats_map(&input);
-    let mut map = input;
+#[must_use]
+pub fn solve_part_1(p: Problem) -> usize {
+    let Problem { mut map } = p;
 
     loop {
-        let (output, changed) = run(&map, 5, |i, j, _max_i, _max_j| {
+        let (output, changed) = run(&map, 4, |i, j, max_i, max_j| {
+            neighbour_offsets(i, j, max_i, max_j)
+                .iter()
+                .map(|&(dx, dy)| ((i as isize + dx) as usize, (j as isize + dy) as usize))
+                .filter(|&(x, y)| map[x][y] == Space::Occupied)
+                .count()
+        });
+        map = output;
+
+        if !changed {
+            break;
+        }
+    }
+
+    count_occupied_seats(&map)
+}
+
+#[must_use]
+pub fn solve_part_2(p: Problem) -> usize {
+    let Problem { mut map } = p;
+    let visible_seats = make_visible_seats_map(&map);
+
+    loop {
+        let (output, changed) = run(&map, 5, |i, j, _, _| {
             visible_seats[&(i, j)]
                 .iter()
                 .filter(|(ni, nj)| map[*ni][*nj] == Space::Occupied)
@@ -194,23 +192,9 @@ fn run_until_stable_state2(input: Vec<Vec<Space>>) -> Vec<Vec<Space>> {
         map = output;
 
         if !changed {
-            return map;
+            break;
         }
     }
-}
-
-#[must_use]
-pub fn solve_part_1(p: Problem) -> usize {
-    let Problem { map } = p;
-    let map = run_until_stable_state(map);
-
-    count_occupied_seats(&map)
-}
-
-#[must_use]
-pub fn solve_part_2(p: Problem) -> usize {
-    let Problem { map } = p;
-    let map = run_until_stable_state2(map);
 
     count_occupied_seats(&map)
 }
