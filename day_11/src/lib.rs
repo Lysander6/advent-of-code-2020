@@ -60,57 +60,14 @@ fn neighbour_offsets(i: usize, j: usize, max_i: usize, max_j: usize) -> &'static
     }
 }
 
-fn run(input: &[Vec<Space>]) -> (Vec<Vec<Space>>, bool) {
-    let max_i = input.len() - 1;
-    let max_j = input[0].len() - 1;
-
-    let mut output = input.to_vec();
-    let mut changed = false;
-
-    for i in 0..=max_i {
-        for j in 0..=max_j {
-            match &input[i][j] {
-                Space::Floor => {}
-                seat @ (Space::Empty | Space::Occupied) => {
-                    let occupied_seats_count = neighbour_offsets(i, j, max_i, max_j)
-                        .iter()
-                        .map(|&(dx, dy)| ((i as isize + dx) as usize, (j as isize + dy) as usize))
-                        .filter_map(|(x, y)| {
-                            if input[x][y] == Space::Occupied {
-                                Some((x, y))
-                            } else {
-                                None
-                            }
-                        })
-                        .count();
-
-                    match seat {
-                        Space::Empty => {
-                            if occupied_seats_count == 0 {
-                                output[i][j] = Space::Occupied;
-                                changed = true;
-                            }
-                        }
-                        Space::Occupied => {
-                            if occupied_seats_count >= 4 {
-                                output[i][j] = Space::Empty;
-                                changed = true;
-                            }
-                        }
-                        Space::Floor => unreachable!(),
-                    }
-                }
-            }
-        }
-    }
-
-    (output, changed)
-}
-
-fn run2(
+fn run<F>(
     input: &[Vec<Space>],
-    visible_seats: &HashMap<(usize, usize), Vec<(usize, usize)>>,
-) -> (Vec<Vec<Space>>, bool) {
+    occupied_seats_limit: usize,
+    occupied_seats_count_fn: F,
+) -> (Vec<Vec<Space>>, bool)
+where
+    F: Fn(usize, usize, usize, usize) -> usize,
+{
     let max_i = input.len() - 1;
     let max_j = input[0].len() - 1;
 
@@ -122,10 +79,7 @@ fn run2(
             match &input[i][j] {
                 Space::Floor => {}
                 seat @ (Space::Empty | Space::Occupied) => {
-                    let occupied_seats_count = visible_seats[&(i, j)]
-                        .iter()
-                        .filter(|(ni, nj)| input[*ni][*nj] == Space::Occupied)
-                        .count();
+                    let occupied_seats_count = occupied_seats_count_fn(i, j, max_i, max_j);
 
                     match seat {
                         Space::Empty => {
@@ -135,7 +89,7 @@ fn run2(
                             }
                         }
                         Space::Occupied => {
-                            if occupied_seats_count >= 5 {
+                            if occupied_seats_count >= occupied_seats_limit {
                                 output[i][j] = Space::Empty;
                                 changed = true;
                             }
@@ -161,7 +115,19 @@ fn run_until_stable_state(input: Vec<Vec<Space>>) -> Vec<Vec<Space>> {
     let mut map = input;
 
     loop {
-        let (output, changed) = run(&map);
+        let (output, changed) = run(&map, 4, |i, j, max_i, max_j| {
+            neighbour_offsets(i, j, max_i, max_j)
+                .iter()
+                .map(|&(dx, dy)| ((i as isize + dx) as usize, (j as isize + dy) as usize))
+                .filter_map(|(x, y)| {
+                    if map[x][y] == Space::Occupied {
+                        Some((x, y))
+                    } else {
+                        None
+                    }
+                })
+                .count()
+        });
         map = output;
 
         if !changed {
@@ -219,7 +185,12 @@ fn run_until_stable_state2(input: Vec<Vec<Space>>) -> Vec<Vec<Space>> {
     let mut map = input;
 
     loop {
-        let (output, changed) = run2(&map, &visible_seats);
+        let (output, changed) = run(&map, 5, |i, j, _max_i, _max_j| {
+            visible_seats[&(i, j)]
+                .iter()
+                .filter(|(ni, nj)| map[*ni][*nj] == Space::Occupied)
+                .count()
+        });
         map = output;
 
         if !changed {
