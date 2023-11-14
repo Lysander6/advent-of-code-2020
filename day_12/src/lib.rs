@@ -113,6 +113,59 @@ pub fn solve_part_1(p: &Problem) -> Result<i32, anyhow::Error> {
     Ok(x.abs() + y.abs())
 }
 
+/// # Errors
+///
+/// Returns error when `Move::LeftTurn` or `Move::RightTurn` has degress value
+/// other than 90, 180, 270 or 360.
+pub fn solve_part_2(p: &Problem) -> Result<i32, anyhow::Error> {
+    let Problem { moves } = p;
+    let mut waypoint_x = 10i32;
+    let mut waypoint_y = 1i32;
+    let mut x = 0i32;
+    let mut y = 0i32;
+
+    for m in moves {
+        match m {
+            Move::North(d) => {
+                waypoint_y += *d;
+            }
+            Move::South(d) => {
+                waypoint_y -= *d;
+            }
+            Move::East(d) => {
+                waypoint_x += *d;
+            }
+            Move::West(d) => {
+                waypoint_x -= *d;
+            }
+            Move::LeftTurn(d) => {
+                (waypoint_x, waypoint_y) = match d {
+                    90 => (-waypoint_y, waypoint_x),
+                    180 => (-waypoint_x, -waypoint_y),
+                    270 => (waypoint_y, -waypoint_x),
+                    360 => (waypoint_x, waypoint_y),
+                    _ => bail!("invalid rotation"),
+                };
+            }
+            Move::RightTurn(d) => {
+                (waypoint_x, waypoint_y) = match d {
+                    90 => (waypoint_y, -waypoint_x),
+                    180 => (-waypoint_x, -waypoint_y),
+                    270 => (-waypoint_y, waypoint_x),
+                    360 => (waypoint_x, waypoint_y),
+                    _ => bail!("invalid rotation"),
+                };
+            }
+            Move::Forward(d) => {
+                x += *d * waypoint_x;
+                y += *d * waypoint_y;
+            }
+        }
+    }
+
+    Ok(x.abs() + y.abs())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -165,5 +218,12 @@ F11";
         let p: Problem = TEST_INPUT.parse().unwrap();
 
         assert_eq!(solve_part_1(&p).unwrap(), 25);
+    }
+
+    #[test]
+    fn test_solve_part_2() {
+        let p: Problem = TEST_INPUT.parse().unwrap();
+
+        assert_eq!(solve_part_2(&p).unwrap(), 286);
     }
 }
