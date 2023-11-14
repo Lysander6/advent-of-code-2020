@@ -8,10 +8,10 @@ fn main() -> Result<(), anyhow::Error> {
     let content = fs::read_to_string(input_path)?;
     let p: Problem = content.parse()?;
 
-    let manhattan_distance = solve_part_1(&p)?;
+    let manhattan_distance = solve_part_1(&p);
     println!("Part 1: {manhattan_distance}");
 
-    let manhattan_distance = solve_part_2(&p)?;
+    let manhattan_distance = solve_part_2(&p);
     println!("Part 2: {manhattan_distance}");
 
     Ok(())
